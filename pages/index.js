@@ -1,7 +1,45 @@
+import React, { useState } from 'react';
 import Head from 'next/head'
 import styles from '../styles/Home.module.css'
 
 export default function Home() {
+  const [searchString, setSearchString] = useState('');
+  const [moviesList, setList] = useState([]);
+  const [nominatedMoviesList, setNominatedMoviesList] = useState([]);
+  const [requestError, setRequestError] = useState('');
+
+  const handleChange = (event) => {
+    setSearchString(event.target.value);
+
+    fetch(`http://www.omdbapi.com/?i=tt3896198&apikey=ebe8ad7e&s=${event.target.value}&type=movie`)
+    .then(res => res.json())
+    .then(
+      (result) => {
+        if (result.Search) {
+          setList(result.Search);
+          setRequestError('');
+        }
+
+        if (result.Error) {
+          setList([]);
+          setRequestError(result.Error);
+        }
+      }
+    )
+  }
+
+  const updateNominatedMoviesList = (movie) => setNominatedMoviesList(nominatedMoviesList => [...nominatedMoviesList, movie]);
+
+  const removeNominatedMovie = (movie) => setNominatedMoviesList(nominatedMoviesList.filter(item => item.imdbID !== movie.imdbID));
+
+  const test = (movie) => {
+    if (nominatedMoviesList.includes(movie) || nominatedMoviesList.length === 5) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   return (
     <div className={styles.container}>
       <Head>
@@ -10,56 +48,63 @@ export default function Home() {
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
+        <h1 className={styles.title}>The Shoppies</h1>
 
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
+        <div className={styles.full_size_grid}>
+          <div className={styles.card}>
+            <form>
+              <label className={styles.label}>Movie title</label>
+              <input type="text" name="movie" className={styles.input} onChange={handleChange} />
+              {
+                requestError != '' && (
+                  <p>Error: {requestError}</p>
+                )
+              }
+            </form>
+          </div>
+        </div>
 
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
+        <div className={styles.half_size_grid}>
+          <div className={styles.card}>
+              <h2>Results for "{searchString}"</h2>
+              {
+                moviesList.length > 0 ? (
+                  moviesList.map((movie, index) =>
+                    <ul>
+                      <li key={index} className={styles.list_item}>{movie.Title} ({movie.Year}) <button disabled={test(movie)} type="button" onClick={() => updateNominatedMoviesList(movie)}>Nominate</button></li>
+                    </ul>
+                  )
+                ) :
+                (
+                  <p>No results</p>
+                )
+              }
+          </div>
+        </div>
 
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+        <div className={styles.half_size_grid}>
+          <div className={styles.card}>
+              <h2>Nominations</h2>
+              {
+                nominatedMoviesList.length > 0 ? (
+                  nominatedMoviesList.map(movie =>
+                    <ul>
+                      <li key={movie.imdbID} className={styles.list_item}>{movie.Title} ({movie.Year}) <button type="button" onClick={() => removeNominatedMovie(movie)}>Remove</button></li>
+                    </ul>
+                  )
+                ) :
+                (
+                  <p>No nominations</p>
+                )
+              }
+              {
+                nominatedMoviesList.length === 5 && (
+                  <p>Congrats! All nominations were made.</p>
+                )
+              }
+          </div>
         </div>
       </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
     </div>
   )
 }
