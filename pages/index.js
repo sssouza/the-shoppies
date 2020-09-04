@@ -22,7 +22,17 @@ export default function Home() {
 
         if (result.Error) {
           setList([]);
-          setRequestError(result.Error);
+
+          switch (result.Error) {
+            case 'Too many results.':
+              setRequestError('Too many results. Please, add one or more letters.');
+              break;
+            case 'Movie not found!':
+              setRequestError('Movie not found. Please, insert another search term.');
+              break;
+            default:
+              setRequestError('Service unavailable. Please, try again later.');
+          }
         }
       }
     )
@@ -32,18 +42,20 @@ export default function Home() {
 
   const removeNominatedMovie = (movie) => setNominatedMoviesList(nominatedMoviesList.filter(item => item.imdbID !== movie.imdbID));
 
-  const test = (movie) => {
-    if (nominatedMoviesList.includes(movie) || nominatedMoviesList.length === 5) {
-      return true;
-    } else {
-      return false;
-    }
+  const shouldDisableButton = (movie) => {
+    let result = false;
+
+    if (nominatedMoviesList.includes(movie) || nominatedMoviesList.length === 5) result = true;
+
+    return result;
   }
 
   return (
     <div className={styles.container}>
       <Head>
         <title>The Shoppies</title>
+        <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+        <meta name="description" content="Welcome to The Shoppies! Choose your favorite movies and nominate them." key="meta-description" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -54,26 +66,34 @@ export default function Home() {
           <div className={styles.card}>
             <form>
               <label className={styles.label}>Movie title</label>
-              <input type="text" name="movie" className={styles.input} onChange={handleChange} />
+              <div className={styles.input_container}>
+                <input type="text" name="movie" className={styles.input} onChange={handleChange} />
+                <img className={styles.input_img} src="/search.png" id="search_img"></img>
+              </div>
               {
-                requestError != '' && (
-                  <p>Error: {requestError}</p>
+                requestError !== '' && (
+                  <p className={styles.error_message}>{requestError}</p>
                 )
               }
             </form>
           </div>
         </div>
 
-        <div className={styles.half_size_grid}>
+        <div className={styles.half_size_grid_with_padding}>
           <div className={styles.card}>
               <h2>Results for "{searchString}"</h2>
               {
                 moviesList.length > 0 ? (
-                  moviesList.map((movie, index) =>
-                    <ul>
-                      <li key={index} className={styles.list_item}>{movie.Title} ({movie.Year}) <button disabled={test(movie)} type="button" onClick={() => updateNominatedMoviesList(movie)}>Nominate</button></li>
-                    </ul>
-                  )
+                  <ul className={styles.list}>
+                    {
+                      moviesList.map((movie, index) =>
+                        <li key={index} className={styles.list_item}>
+                          <p className={styles.movie_name}>{movie.Title} ({movie.Year})</p>
+                          <button className={styles.button} disabled={shouldDisableButton(movie)} type="button" onClick={() => updateNominatedMoviesList(movie)}>Nominate</button>
+                        </li>
+                      )
+                    }
+                  </ul>
                 ) :
                 (
                   <p>No results</p>
@@ -87,11 +107,16 @@ export default function Home() {
               <h2>Nominations</h2>
               {
                 nominatedMoviesList.length > 0 ? (
-                  nominatedMoviesList.map(movie =>
-                    <ul>
-                      <li key={movie.imdbID} className={styles.list_item}>{movie.Title} ({movie.Year}) <button type="button" onClick={() => removeNominatedMovie(movie)}>Remove</button></li>
-                    </ul>
-                  )
+                  <ul className={styles.list}>
+                    {
+                      nominatedMoviesList.map((movie, index) =>
+                        <li key={index} className={styles.list_item}>
+                          <p className={styles.movie_name}>{movie.Title} ({movie.Year})</p>
+                          <button className={styles.button} type="button" onClick={() => removeNominatedMovie(movie)}>Remove</button>
+                        </li>
+                      )
+                    }
+                  </ul>
                 ) :
                 (
                   <p>No nominations</p>
@@ -99,7 +124,9 @@ export default function Home() {
               }
               {
                 nominatedMoviesList.length === 5 && (
-                  <p>Congrats! All nominations were made.</p>
+                  <div className={styles.banner_success}>
+                    <p>Congrats! All nominations were made.</p>
+                  </div>
                 )
               }
           </div>
